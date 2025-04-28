@@ -48,6 +48,6 @@ jobs:
     - name: Build and run tests
       run: mvn clean verify
       env:
-        SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+        SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ong_cachorros
         SPRING_DATASOURCE_USERNAME: postgres
-        SPRING_DATASOURCE_PASSWORD: postgres
+        SPRING_DATASOURCE_PASSWORD: @Caique201030
