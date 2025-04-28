@@ -1,6 +1,6 @@
 package br.com.unifecaf.service.entity;
 
-import org.hibernate.validator.constraints.URL;
+
 
 import br.com.unifecaf.service.enumerates.CastradoENUM;
 import br.com.unifecaf.service.enumerates.PorteENUM;
@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 
@@ -28,8 +29,7 @@ public class Cachorro extends Animal {
 	@Enumerated(EnumType.STRING)
 	private CastradoENUM castrado;
 
-	@Column(name = "IMAGEM")
-	@URL(message = "URL inválida") 
+	@Column(name = "IMAGEM") 
     @Size(max = 2000, message = "URL muito longa")
 	private String imagem;
 

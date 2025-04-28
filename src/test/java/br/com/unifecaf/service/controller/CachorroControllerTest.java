@@ -1,18 +1,18 @@
 package br.com.unifecaf.service.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 
 import br.com.unifecaf.service.dto.DadosCachorro;
 import br.com.unifecaf.service.dto.DadosDetalhamentoCachorro;
@@ -30,93 +30,108 @@ public class CachorroControllerTest {
     @Autowired
     private CachorroRepository cachorroRepository;
     
+    private Long idCachorroExistente;
+    private Long idCachorroInexistente = 9999L;
     
-    void iniciarCachorro() {
-        DadosCachorro dadosCachorro = new DadosCachorro(
-            "Bob", 
-            2, 
-            2.20, 
-            SexoENUM.MACHO, 
-            "Labrador", 
-            PorteENUM.MEDIO, 
-            CastradoENUM.NAO, 
-            "imagembonita", 
-            "Cachorro brincalhão"
-        );
-        ResponseEntity<DadosDetalhamentoCachorro> response = restTemplate.postForEntity(
-            "/cachorro/cadastrar", // Corrigido o endpoint
-            dadosCachorro, 
-            DadosDetalhamentoCachorro.class
-        );
+    @BeforeEach
+    void setUp() {
+        cachorroRepository.deleteAll();
         
-        if (response.getStatusCode() != HttpStatus.CREATED) {
-            System.err.println("Falha ao iniciar cachorro: " + response.getBody());
-        }
-    }
-
-    @Test
-    @DisplayName("Deve cadastrar um cachorro com sucesso")
-    void criarCachorro() {
         DadosCachorro dadosCachorro = new DadosCachorro(
-            "Rex", // Nome diferente do inicializado para evitar conflito
-            	3, 
-            3.10, 
-            SexoENUM.MACHO, 
-            "Golden Retriever", 
-            PorteENUM.GRANDE, 
-            CastradoENUM.SIM, 
-            "imagembonita", 
-            "Cachorro tranquilo"
-        );
-        
-        ResponseEntity<DadosDetalhamentoCachorro> response = restTemplate.postForEntity(
-            "/cachorro/cadastrar",
-            dadosCachorro, 
-            DadosDetalhamentoCachorro.class
-        );
-        
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertNotNull(response.getBody().id());
-    }
-    
-    @Test
-    @DisplayName("Deve retornar um cachorro existente por ID")
-    void buscarPorId_comIdExistente_deveRetornarCachorro() {
-        // Primeiro cadastra um cachorro para ter um ID válido
-        DadosCachorro dadosCachorro = new DadosCachorro(
-            "Rex", 
+            "Rex",
             3, 
             3.10, 
             SexoENUM.MACHO, 
             "Golden Retriever", 
             PorteENUM.GRANDE, 
             CastradoENUM.SIM, 
-            null, 
+            "https://exemplo.com/imagem.jpg", 
             "Cachorro tranquilo"
         );
         
-        ResponseEntity<DadosDetalhamentoCachorro> responseCadastro = restTemplate.postForEntity(
+        ResponseEntity<DadosDetalhamentoCachorro> response = restTemplate.postForEntity(
             "/cachorro/cadastrar",
             dadosCachorro, 
             DadosDetalhamentoCachorro.class
         );
         
-        Long idCachorro = responseCadastro.getBody().id();
+        idCachorroExistente = response.getBody().id();
+    }
+    
+    @Test
+    @DisplayName("Deve cadastrar um cachorro com sucesso")
+    void criarCachorro() {
+        DadosCachorro dados = new DadosCachorro(
+            "Rex",
+            3, 
+            3.10, 
+            SexoENUM.MACHO, 
+            "Golden Retriever", 
+            PorteENUM.GRANDE, 
+            CastradoENUM.SIM, 
+            "https://exemplo.com/imagem.jpg",
+            "Cachorro tranquilo"
+        );
         
-        // Agora testa a busca
+        try {
+            ResponseEntity<DadosDetalhamentoCachorro> response = restTemplate.postForEntity(
+                "/cachorro/cadastrar", dados, DadosDetalhamentoCachorro.class);
+            
+            assertEquals(HttpStatus.CREATED, response.getStatusCode());
+            assertNotNull(response.getBody().id());
+        } catch (HttpClientErrorException e) {
+            fail("Falha ao cadastrar: " + e.getResponseBodyAsString());
+        }
+    }
+
+    @Test
+    @DisplayName("Deve retornar um cachorro existente por ID")
+    void buscarPorId_comIdExistente_deveRetornarCachorro() {
         ResponseEntity<DadosDetalhamentoCachorro> responseBusca = restTemplate.getForEntity(
-            "/cachorro/buscar/" + idCachorro,
+            "/cachorro/buscar/" + idCachorroExistente,
             DadosDetalhamentoCachorro.class
         );
         
         assertEquals(HttpStatus.OK, responseBusca.getStatusCode());
         assertNotNull(responseBusca.getBody());
-        assertEquals(idCachorro, responseBusca.getBody().id());
+        assertEquals(idCachorroExistente, responseBusca.getBody().id());
         assertEquals("Rex", responseBusca.getBody().nome());
     }
 
-   
-   
-   
+    @Test
+    @DisplayName("Deve deletar um cachorro existente com sucesso")
+    void deletarCachorroExistente() {
+        ResponseEntity<DadosDetalhamentoCachorro> response = restTemplate.exchange(
+            "/cachorro/deletar/{id}",
+            HttpMethod.DELETE,
+            null,
+            DadosDetalhamentoCachorro.class,
+            idCachorroExistente
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(idCachorroExistente, response.getBody().id());
+        
+        assertFalse(cachorroRepository.existsById(idCachorroExistente));
+    }
+
+    @Test
+    @DisplayName("Deve retornar o objeto correto após exclusão")
+    void verificaObjetoRetornadoAposExclusao() {
+        ResponseEntity<DadosDetalhamentoCachorro> response = restTemplate.exchange(
+            "/cachorro/deletar/{id}",
+            HttpMethod.DELETE,
+            null,
+            DadosDetalhamentoCachorro.class,
+            idCachorroExistente
+        );
+
+        DadosDetalhamentoCachorro dadosExcluidos = response.getBody();
+        assertNotNull(dadosExcluidos);
+        assertEquals("Rex", dadosExcluidos.nome());
+        assertEquals(3, dadosExcluidos.idade());
+        assertEquals(SexoENUM.MACHO, dadosExcluidos.sexo());
+        assertEquals("Golden Retriever", dadosExcluidos.raca());
+    }
 }
