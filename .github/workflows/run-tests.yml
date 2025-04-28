@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     services:
@@ -50,4 +49,4 @@ jobs:
       env:
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ong_cachorros
         SPRING_DATASOURCE_USERNAME: postgres
-        SPRING_DATASOURCE_PASSWORD: @Caique201030
+        SPRING_DATASOURCE_PASSWORD: "@Caique201030"
